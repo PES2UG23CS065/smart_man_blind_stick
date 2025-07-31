@@ -1,59 +1,52 @@
 // Define pins
-const int buzzerPin = 5;        // Buzzer connected to pin 5
-const int irSensorPin = 7;      // IR sensor pin
-const int trigPin = 6;          // Ultrasonic trigger
-const int echoPin = 8;          // Ultrasonic echo
+const int buzzerPin = 5;  // Buzzer connected to pin 5
+const int irSensorPin = 7;  // IR sensor pin (replace with actual pin)
+const int trigPin = 6;  // Ultrasonic sensor trigger pin
+const int echoPin = 8;  // Ultrasonic sensor echo pin
 
 void setup() {
-  pinMode(buzzerPin, OUTPUT);
-  pinMode(irSensorPin, INPUT);
-  pinMode(trigPin, OUTPUT);
-  pinMode(echoPin, INPUT);
-  Serial.begin(9600);
+  pinMode(buzzerPin, OUTPUT);  // Set buzzer pin as output
+  pinMode(irSensorPin, INPUT);  // Set IR sensor pin as input
+  pinMode(trigPin, OUTPUT);  // Set ultrasonic sensor trigger pin as output
+  pinMode(echoPin, INPUT);  // Set ultrasonic sensor echo pin as input
+  Serial.begin(9600);  // Initialize serial communication for debugging
 }
 
 void loop() {
-  bool alert = false;
-
-  // 1. Check for data from Python
+  // Check if data is available from the Python program
   if (Serial.available() > 0) {
-    char receivedData = Serial.read();
-    if (receivedData == 'P') {
-      Serial.println("Python Signal: Person detected");
-      alert = true;
+    char receivedData = Serial.read();  // Read the incoming byte
+
+    if (receivedData == 'P') {  // If 'P' is received from Python program
+      digitalWrite(buzzerPin, HIGH);  // Turn buzzer on
+      Serial.println("⚠ Buzzer ON (Person detected)");  // Debugging message
+      delay(1000);  // Keep buzzer on for 1 second
+      digitalWrite(buzzerPin, LOW);  // Turn buzzer off
     }
   }
 
-  // 2. Check IR sensor
-  int irValue = digitalRead(irSensorPin);
-  if (irValue == LOW) {  // Most IR modules output LOW when object detected
-    Serial.println("IR Sensor: Obstacle detected");
-    alert = true;
-  }
+  // IR sensor check (optional)
+  int irState = digitalRead(irSensorPin);
 
-  // 3. Ultrasonic sensor reading
+  // Ultrasonic sensor distance check (optional)
   long duration, distance;
   digitalWrite(trigPin, LOW);
   delayMicroseconds(2);
   digitalWrite(trigPin, HIGH);
   delayMicroseconds(10);
   digitalWrite(trigPin, LOW);
-  duration = pulseIn(echoPin, HIGH, 30000);  // Timeout after 30 ms
-  distance = duration * 0.034 / 2;           // cm
+  duration = pulseIn(echoPin, HIGH);
+  distance = (duration / 2) / 29.1;  // Calculate distance in cm
 
-  if (distance > 0 && distance < 10) {  // valid range and near object
-    Serial.print("Ultrasonic Sensor: Object at ");
-    Serial.print(distance);
-    Serial.println(" cm");
-    alert = true;
-  }
-
-  // Final action
-  if (alert) {
-    digitalWrite(buzzerPin, HIGH);  
+  // Optional buzzer trigger based on IR sensor or distance
+  if (irState == HIGH || distance < 10) {  // If IR sensor is triggered or object within 10 cm
+    digitalWrite(buzzerPin, LOW);  // Turn buzzer on
+    Serial.println("⚠ Buzzer ON (IR or Ultrasonic Trigger)");  // Debugging message
   } else {
-    digitalWrite(buzzerPin, LOW);  
+    digitalWrite(buzzerPin, HIGH);  // Turn buzzer off
+    Serial.println(" Buzzer OFF (IR and Ultrasonic conditions not met)");  // Debugging message
   }
 
-  delay(100);
+  delay(100);  // Small delay for stability
 }
+
